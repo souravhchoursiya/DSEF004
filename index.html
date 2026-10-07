@@ -74,7 +74,6 @@
             letter-spacing: -0.5px;
         }
 
-        /* NEW CSS: Live Clock */
         .live-clock {
             text-align: center;
             font-size: 15px;
@@ -314,7 +313,6 @@
             const [isChecking, setIsChecking] = React.useState(false);
             const [record, setRecord] = React.useState(null);
 
-            // NEW: State and Effect for Live Clock
             const [currentTime, setCurrentTime] = React.useState(new Date());
 
             React.useEffect(() => {
@@ -330,7 +328,6 @@
             const CAMPUS_LON = 77.2090;  
             const MAX_DISTANCE_METERS = 8000; 
 
-            // CR Contact Info
             const CR_NAME = "Souravh Choursiya";
             const CR_PHONE = "919891574024"; 
             // ==========================================
@@ -346,7 +343,6 @@
                 return 0; 
             };
 
-            // UPGRADED: Forces Frontend to evaluate schedule strictly using IST
             const checkIsClassTime = () => {
                 const istString = new Date().toLocaleString("en-US", {timeZone: "Asia/Kolkata"});
                 const istNow = new Date(istString);
@@ -390,17 +386,20 @@
             const handleMarkPresent = async (e) => {
                 e.preventDefault();
 
-    // 🛑 NEW: Check if this device has already marked attendance today
-    const istString = new Date().toLocaleString("en-US", {timeZone: "Asia/Kolkata"});
-    const todayStr = new Date(istString).toISOString().split('T')[0];
-    const lastMarkedDate = localStorage.getItem('device_attendance_date');
-    
-    if (lastMarkedDate === todayStr) {
-        setStatus({ type: 'error', message: 'Access Denied: Attendance has already been submitted from this device today. One device = One student.' });
-        return;
-    }
+                // Consolidated Date Logic: Get strictly IST time once.
+                const istString = new Date().toLocaleString("en-US", {timeZone: "Asia/Kolkata"});
+                const istNow = new Date(istString);
+                const year = istNow.getFullYear();
+                const month = String(istNow.getMonth() + 1).padStart(2, '0');
+                const day = String(istNow.getDate()).padStart(2, '0');
+                const today = `${year}-${month}-${day}`;
 
-
+                // 🛑 Device Check
+                const lastMarkedDate = localStorage.getItem('device_attendance_date');
+                if (lastMarkedDate === today) {
+                    setStatus({ type: 'error', message: 'Access Denied: Attendance has already been submitted from this device today. One device = One student.' });
+                    return;
+                }
 
                 if (!checkIsClassTime()) {
                     setStatus({ type: 'error', message: 'Attendance closed. Current IST is outside lecture hours.' });
@@ -428,14 +427,6 @@
                     setIsLoading(false); return;
                 }
 
-                // SECURED: Generate submission date exclusively in IST
-                const istString = new Date().toLocaleString("en-US", {timeZone: "Asia/Kolkata"});
-                const istNow = new Date(istString);
-                const year = istNow.getFullYear();
-                const month = String(istNow.getMonth() + 1).padStart(2, '0');
-                const day = String(istNow.getDate()).padStart(2, '0');
-                const today = `${year}-${month}-${day}`;
-
                 try {
                     const response = await fetch(scriptURL, {
                         method: 'POST',
@@ -443,12 +434,12 @@
                         body: JSON.stringify({ rollNo: rollNo, date: today })
                     });
                     const result = await response.json();
+                    
                     if (result.status === 'success') {
                         setStatus({ type: 'success', message: `Success! Attendance marked for today.` });
-
-// 🛑 NEW: Lock the device for the rest of the day
-                localStorage.setItem('device_attendance_date', today);
-
+                        
+                        // 🛑 Lock the device for the rest of the day
+                        localStorage.setItem('device_attendance_date', today);
                         setRollNo('');
                     } else {
                         setStatus({ type: 'error', message: 'Error: ' + result.message });
@@ -488,7 +479,6 @@
                     <img src="https://upload.wikimedia.org/wikipedia/en/thumb/b/b6/Delhi_University.svg/960px-Delhi_University.svg.png" alt="DU Logo" className="university-logo" />
                     <h2>Attendance Portal</h2>
 
-                    {/* NEW UI: Live Clock */}
                     <div className="clock-container">
                         <div className="live-clock">
                             ⏱ {currentTime.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit' }).toUpperCase()}
