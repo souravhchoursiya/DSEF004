@@ -389,6 +389,19 @@
 
             const handleMarkPresent = async (e) => {
                 e.preventDefault();
+
+    // 🛑 NEW: Check if this device has already marked attendance today
+    const istString = new Date().toLocaleString("en-US", {timeZone: "Asia/Kolkata"});
+    const todayStr = new Date(istString).toISOString().split('T')[0];
+    const lastMarkedDate = localStorage.getItem('device_attendance_date');
+    
+    if (lastMarkedDate === todayStr) {
+        setStatus({ type: 'error', message: 'Access Denied: Attendance has already been submitted from this device today. One device = One student.' });
+        return;
+    }
+
+
+
                 if (!checkIsClassTime()) {
                     setStatus({ type: 'error', message: 'Attendance closed. Current IST is outside lecture hours.' });
                     return;
@@ -432,6 +445,10 @@
                     const result = await response.json();
                     if (result.status === 'success') {
                         setStatus({ type: 'success', message: `Success! Attendance marked for today.` });
+
+// 🛑 NEW: Lock the device for the rest of the day
+                localStorage.setItem('device_attendance_date', today);
+
                         setRollNo('');
                     } else {
                         setStatus({ type: 'error', message: 'Error: ' + result.message });
